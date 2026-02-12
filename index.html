@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyst Hub MCP Server — Interactive Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0F172A; color: #E2E8F0; min-height: 100vh; }
+
+  .header { background: #0F2B46; border-bottom: 3px solid #0891B2; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; color: #fff; }
+  .header h1 span { color: #22D3EE; }
+  .header .badge { background: #0891B2; color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 30px 20px; }
+
+  .intro { background: #1E293B; border-radius: 12px; padding: 24px; margin-bottom: 24px; border-left: 4px solid #0891B2; }
+  .intro p { color: #94A3B8; font-size: 14px; line-height: 1.6; }
+  .intro strong { color: #22D3EE; }
+
+  .query-section { margin-bottom: 30px; }
+  .query-section label { display: block; font-size: 13px; color: #64748B; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+  .query-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+  .query-bar input { flex: 1; background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 14px 18px; color: #E2E8F0; font-size: 15px; outline: none; }
+  .query-bar input:focus { border-color: #0891B2; }
+  .query-bar button { background: #0891B2; color: #fff; border: none; border-radius: 8px; padding: 14px 24px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .query-bar button:hover { background: #06B6D4; }
+
+  .quick-queries { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .quick-queries button { background: #1E293B; border: 1px solid #334155; color: #94A3B8; padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .quick-queries button:hover { border-color: #0891B2; color: #22D3EE; background: #0F2B46; }
+
+  .tool-tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tool-tabs button { background: #1E293B; border: 1px solid #334155; color: #94A3B8; padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 12px; cursor: pointer; font-family: 'Menlo', 'Consolas', monospace; }
+  .tool-tabs button.active { background: #0F2B46; border-color: #0891B2; color: #22D3EE; border-bottom: none; }
+
+  .results { background: #0D1B2A; border: 1px solid #1E293B; border-radius: 0 8px 8px 8px; padding: 24px; min-height: 300px; }
+  .results.empty { display: flex; align-items: center; justify-content: center; color: #475569; font-size: 14px; }
+
+  .result-card { background: #1E293B; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 3px solid #0891B2; }
+  .result-card:last-child { margin-bottom: 0; }
+  .result-card.paywall { border-left-color: #F59E0B; }
+
+  .result-title { font-size: 16px; font-weight: 700; color: #F59E0B; margin-bottom: 6px; }
+  .result-meta { font-size: 12px; color: #64748B; margin-bottom: 10px; }
+  .result-meta span { margin-right: 12px; }
+
+  .result-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tag { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+  .tag.sector { background: #0F2B46; color: #22D3EE; border: 1px solid #0891B2; }
+  .tag.ticker { background: #1A1A2E; color: #A78BFA; border: 1px solid #7C3AED; }
+  .tag.sentiment-positive { background: #052E16; color: #4ADE80; border: 1px solid #16A34A; }
+  .tag.sentiment-neutral { background: #1C1917; color: #FBBF24; border: 1px solid #D97706; }
+  .tag.sentiment-negative { background: #2D0A0A; color: #F87171; border: 1px solid #DC2626; }
+  .tag.sentiment-bullish { background: #052E16; color: #4ADE80; border: 1px solid #16A34A; }
+  .tag.sentiment-bearish { background: #2D0A0A; color: #F87171; border: 1px solid #DC2626; }
+  .tag.sentiment-cautious { background: #1C1917; color: #FBBF24; border: 1px solid #D97706; }
+
+  .result-teaser { font-size: 14px; color: #CBD5E1; line-height: 1.6; margin-bottom: 12px; padding: 12px; background: #0F172A; border-radius: 6px; }
+
+  .price-targets { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+  .pt-item { background: #0F172A; padding: 8px 14px; border-radius: 6px; font-size: 13px; }
+  .pt-item .ticker-label { color: #94A3B8; font-weight: 600; }
+  .pt-item .pt-value { color: #F59E0B; font-weight: 700; }
+  .pt-item .upside { font-size: 11px; margin-left: 4px; }
+  .pt-item .upside.positive { color: #4ADE80; }
+  .pt-item .upside.negative { color: #F87171; }
+
+  .paywall-msg { background: linear-gradient(135deg, #1A0F00, #2D1A00); border: 1px solid #F59E0B; border-radius: 8px; padding: 20px; text-align: center; }
+  .paywall-msg h3 { color: #F59E0B; margin-bottom: 8px; font-size: 16px; }
+  .paywall-msg p { color: #94A3B8; font-size: 13px; line-height: 1.5; }
+  .paywall-msg .cta { display: inline-block; background: #F59E0B; color: #0F172A; padding: 10px 24px; border-radius: 6px; font-weight: 700; margin-top: 12px; font-size: 14px; text-decoration: none; }
+
+  .coverage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .coverage-card { background: #1E293B; border-radius: 8px; padding: 16px; border-top: 3px solid #0891B2; }
+  .coverage-card h4 { color: #22D3EE; font-size: 14px; margin-bottom: 8px; }
+  .coverage-card .analyst { font-size: 13px; color: #CBD5E1; margin-bottom: 4px; }
+  .coverage-card .focus { font-size: 11px; color: #64748B; }
+
+  .tool-label { display: inline-block; background: #0F2B46; color: #0891B2; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-family: monospace; margin-bottom: 12px; }
+
+  .watermark { text-align: center; padding: 30px; color: #334155; font-size: 12px; }
+  .watermark a { color: #0891B2; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Analyst Hub <span>MCP Server</span> — Interactive Demo</h1>
+  <span class="badge">PROTOTYPE v1.0</span>
+</div>
+
+<div class="container">
+  <div class="intro">
+    <p><strong>This simulates what happens when a PM's AI agent queries the Analyst Hub MCP Server.</strong> Try the preset queries below, or type your own. The server searches across 11 affiliate research brands, returns metadata and teaser summaries (free tier), and prompts for subscription to access full reports (premium tier).</p>
+  </div>
+
+  <div class="query-section">
+    <label>Ask a question like a portfolio manager would</label>
+    <div class="query-bar">
+      <input type="text" id="queryInput" placeholder="e.g. What's the latest research on agribusiness estimate revisions?">
+      <button onclick="runQuery()">Search Research</button>
+    </div>
+
+    <div class="quick-queries">
+      <button onclick="preset('vrt')">VRT data center infrastructure</button>
+      <button onclick="preset('tesla')">Tesla Q4 bearish analysis</button>
+      <button onclick="preset('supply-chain')">Tech supply chain tightness</button>
+      <button onclick="preset('meta')">Meta AI competition</button>
+      <button onclick="preset('dupont')">DuPont healthcare & water</button>
+      <button onclick="preset('trucks')">Used truck market trends</button>
+      <button onclick="preset('trade')">Trade policy macro</button>
+      <button onclick="preset('energy')">Energy & utility weekly</button>
+      <button onclick="preset('staples')">Consumer staples spending</button>
+      <button onclick="preset('sports')">Sports ecosystem</button>
+      <button onclick="preset('costs')">Input cost tracker</button>
+      <button onclick="preset('coverage')">Browse analyst directory</button>
+    </div>
+  </div>
+
+  <div class="tool-tabs">
+    <button class="active" id="tab-results">Results</button>
+  </div>
+
+  <div class="results" id="resultsArea">
+    <div class="results empty">Click a preset query or type your own to see what the MCP server returns</div>
+  </div>
+</div>
+
+<div class="watermark">
+  Analyst Hub MCP Server Prototype — February 2026<br>
+  <a href="#">Built for AI-native research distribution</a>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// MOCK DATABASE (same data as MCP server)
+// ═══════════════════════════════════════════
+const DB = [
+  {
+    id: "22V-2026-0211-001",
+    title: "Payrolls Expected to be Risk-on But a Hot Report Would Add a Longer-Term Risk + AI Challenges to Business Models Remains an Idio Risk",
+    date: "2026-02-11",
+    authors: ["Dennis DeBusschere", "Brian Herlihy", "Kevin Brocks", "Sophia Wang"],
+    affiliate: "22V Research",
+    category: "Portfolio Strategy",
+    sectors: ["Macro", "Investment Strategy"],
+    tickers: [],
+    themes: ["Payroll expectations", "Risk-on positioning", "AI business model disruption", "Rate sensitivity", "Small cap vs large cap"],
+    sentiment: "neutral",
+    teaser: "Investors polled ahead of payrolls data expect a print below sell-side consensus. A hot report would be risk-on short-term but raises longer-term concerns about growth speed limits. Meanwhile, AI's existential threat to certain business models remains an underappreciated idiosyncratic risk factor.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "HJR-2026-0121-001",
+    title: "HJR Agribusiness: Estimate Revisions",
+    date: "2026-01-21",
+    authors: ["Heather Jones"],
+    affiliate: "HJones",
+    category: "Industry Update",
+    sectors: ["Agriculture", "Biofuels", "Consumer Foods"],
+    tickers: ["DAR", "BG", "INGR", "ADM"],
+    themes: ["Biofuel policy (RVO)", "Crush margins", "Corn wet milling", "Ethanol outlook", "RVO policy changes"],
+    sentiment: "positive",
+    teaser: "Biofuel policy clarity is imminent and directionally bullish. Updated estimates reflect stronger crush margin environment and policy tailwinds from RVO. DAR and BG see meaningful upside from margin expansion, while ADM faces commodity headwinds warranting a lowered price target.",
+    has_price_targets: true,
+    has_estimate_revisions: true,
+    price_targets: [
+      { ticker: "DAR", price: 39.32, target: 50.00, upside: 27.2 },
+      { ticker: "BG", price: 108.20, target: 132.00, upside: 22.0 },
+      { ticker: "INGR", price: 114.46, target: 119.00, upside: 4.0 },
+      { ticker: "ADM", price: 64.97, target: 60.00, upside: -7.6 }
+    ]
+  },
+  {
+    id: "RUB-2026-0129-001",
+    title: "Consumer Stocks: Are Companies Acting Their Age?",
+    date: "2026-01-29",
+    authors: ["Aram Rubinson", "Shaked Dill"],
+    affiliate: "Optimal + Rubinson",
+    category: "Consumer Strategy",
+    sectors: ["Consumer Discretionary", "Retail"],
+    tickers: ["CMG", "DASH", "BROS", "AMZN", "MCD", "AZO", "COST", "DAL", "DKS", "HD", "H"],
+    themes: ["Company life cycles", "Unit expansion limits", "M&A strategy", "Growth diversification", "Shareholder return optimization"],
+    sentiment: "neutral",
+    teaser: "Companies follow a predictable life cycle — the key is acting their age. A proprietary Life Cycle Framework ranks ~230 consumer stocks on six attributes to identify which companies are aging gracefully and which are overreaching. Includes deep dives on Amazon, Chipotle, Dutch Bros, and others.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "22V-2026-0209-001",
+    title: "Tech Earnings: Is the AI Capex Cycle Pricing in Sustainable Returns?",
+    date: "2026-02-09",
+    authors: ["Brian Herlihy", "Kevin Brocks"],
+    affiliate: "22V Research",
+    category: "Sector Analysis",
+    sectors: ["Technology", "Semiconductors"],
+    tickers: ["NVDA", "MSFT", "GOOGL", "AAPL", "META", "SMCI"],
+    themes: ["AI capex sustainability", "GPU demand cycle", "Margin compression risk", "Hyperscaler spending", "Semiconductor valuations"],
+    sentiment: "neutral",
+    teaser: "While AI chip demand remains robust, intensifying competition from custom silicon and open-source models could pressure margins. Hyperscaler capex commitments are being questioned by investors as ROI timelines extend. The risk-reward for pure-play AI infrastructure names is becoming more balanced.",
+    has_price_targets: true,
+    has_estimate_revisions: false,
+    price_targets: [
+      { ticker: "NVDA", price: 285.00, target: 320.00, upside: 12.3 },
+      { ticker: "SMCI", price: 42.00, target: 55.00, upside: 31.0 }
+    ]
+  },
+  {
+    id: "FOX-2026-0211-001",
+    title: "VRT: Big Backlog Supports Beat and Raise",
+    date: "2026-02-11",
+    authors: ["Steven Fox", "Aneesha Patel"],
+    affiliate: "Fox Advisors",
+    category: "Earnings Review",
+    sectors: ["Technology", "Data Center Infrastructure"],
+    tickers: ["VRT", "ETN", "FLEX", "HUT", "GOOGL", "ETR"],
+    themes: ["Data Centers", "AI Infrastructure", "Power Management", "Thermal Management"],
+    sentiment: "bullish",
+    teaser: "Raising 2026E EPS from $4.85 to $6.05 (+44% YoY) after a robust beat and raise. Year-end backlog surged to ~$15B (+109% YoY) with Q4 orders of $8.35B reflecting a book-to-bill of 2.9X. VRT's engagement with Hut 8 for AI data center infrastructure highlights growing system-level project complexity.",
+    has_price_targets: false,
+    has_estimate_revisions: true,
+    price_targets: []
+  },
+  {
+    id: "FOX-2026-0210-001",
+    title: "Survey Says Aggregate Supply Chains Tighten as Receivables Rise",
+    date: "2026-02-10",
+    authors: ["Steven Fox", "Aneesha Patel"],
+    affiliate: "Fox Advisors",
+    category: "Industry Update",
+    sectors: ["Technology", "Semiconductors", "Electronics Manufacturing"],
+    tickers: ["SANM", "PLXS", "ARW", "AVT", "APH", "TEL", "APTV", "FLEX"],
+    themes: ["Supply Chain", "Inventory Analysis", "Component Shortages", "Lead Times"],
+    sentiment: "cautious",
+    teaser: "Aggregate tech supply chain inventories fell to 14.8% of annualized Q4 sales (ex-Apple), down from 15.7% in Q3, signaling continued tightening. Receivables hit a record 16.2% of sales. Both major distributors (Arrow, Avnet) report rising lead times and book-to-bill ratios above parity for a fourth consecutive quarter.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "GLJ-2026-0129-001",
+    title: "Tesla Q4 Review: From Hypergrowth to Hope",
+    date: "2026-01-29",
+    authors: ["Gordon L. Johnson II", "Austin Wang", "John Dischley"],
+    affiliate: "GLJ Research",
+    category: "Company Update",
+    sectors: ["Automotive", "Electric Vehicles", "Technology"],
+    tickers: ["TSLA"],
+    themes: ["EV Market", "Autonomous Driving", "Cash Flow Analysis", "Valuation"],
+    sentiment: "bearish",
+    teaser: "TSLA printed Q4 rev/GAAP EPS of $24.9bn/$0.24 vs. consensus $25.1bn/$0.34. The apparent margin beat was driven by transient factors: deferred FSD revenue drawdown, $542mn in regulatory credits, and FX tailwinds. With $20bn capex guided for 2026 against stalling growth, TSLA appears poised for negative FCF. Trading at 358x 2026E EPS vs. 35x for the rest of the Mag-7.",
+    has_price_targets: true,
+    has_estimate_revisions: false,
+    price_targets: [
+      { ticker: "TSLA", current: 431.46, target: 25.28, upside: -94.1 }
+    ]
+  },
+  {
+    id: "SNR-2026-0208-001",
+    title: "Your Energy & Utility News for the Week Ending February 8th 2026",
+    date: "2026-02-08",
+    authors: ["Timm Schneider"],
+    affiliate: "Schneider Research",
+    category: "Weekly Roundup",
+    sectors: ["Energy", "Utilities", "Renewables"],
+    tickers: ["DVN", "CTRA", "EQNR", "LNG", "WMB", "ENLT", "ENR"],
+    themes: ["Oil & Gas", "LNG", "Solar", "Wind", "Nuclear", "Energy Storage", "Hydrogen"],
+    sentiment: "neutral",
+    teaser: "Key headlines: Devon-Coterra merger creates $58B shale giant; Cheniere submits application for 24 MTPA LNG plant in Texas; all five suspended offshore wind projects cleared to resume construction; global BESS capacity tops 250 GW overtaking pumped hydro for first time; Siemens Energy investing $1B in US power grid expansion.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "CAN-2026-0111-001",
+    title: "Two Drivers of Potential Incremental Revenue in FY26",
+    date: "2026-01-11",
+    authors: ["Vasily Karasyov"],
+    affiliate: "Cannonball",
+    category: "Company Update",
+    sectors: ["Technology", "Digital Advertising", "Media"],
+    tickers: ["TTD"],
+    themes: ["Programmatic Advertising", "Connected TV", "Ad Tech", "OpenPath"],
+    sentiment: "bullish",
+    teaser: "Analyzing two growth drivers for TTD in FY26: OpenPath, which bypasses sell-side intermediaries and now accounts for ~10% of revenue with an estimated 1.5% publisher fee; and Deal Desk, newly launched to improve PMP campaign completion rates—currently ~90% of campaigns go uncompleted. Both should support TTD's 20.5% take rate.",
+    has_price_targets: true,
+    has_estimate_revisions: false,
+    price_targets: [
+      { ticker: "TTD", current: 39.90, target: 70.00, upside: 75.4 }
+    ]
+  },
+  {
+    id: "FRM-2026-0210-001",
+    title: "DD: Well Positioned Streamlined Portfolio",
+    date: "2026-02-10",
+    authors: ["Frank Mitsch", "Aziza Gazieva"],
+    affiliate: "Fermium",
+    category: "Estimate Changes",
+    sectors: ["Chemicals", "Healthcare", "Water Technology", "Industrials"],
+    tickers: ["DD"],
+    themes: ["Specialty Chemicals", "Healthcare Technology", "Water Treatment", "Portfolio Transformation"],
+    sentiment: "bullish",
+    teaser: "The new DuPont is bucking the tepid chemical sector outlook. Q4 EPS of $0.46 beat consensus $0.43, with Healthcare & Water Technologies delivering 31% EBITDA margins. Full-year 2026 guidance above consensus across all metrics. Shares up 42% since Qnity separation, trading at <12x 2026E EBITDA. Raising 2026E EBITDA from $1.71B to $1.74B.",
+    has_price_targets: true,
+    has_estimate_revisions: true,
+    price_targets: [
+      { ticker: "DD", current: 47.10, target: 50.00, upside: 6.2 }
+    ]
+  },
+  {
+    id: "FFTT-2026-0210-002",
+    title: "US Tells World at WEF It Is Going Back to Hamiltonian Economic System",
+    date: "2026-02-10",
+    authors: ["Luke Gromen"],
+    affiliate: "FFTT",
+    category: "Macro Strategy",
+    sectors: ["Macro", "Trade Policy", "Commodities"],
+    tickers: [],
+    themes: ["Trade Policy", "Tariffs", "Bretton Woods", "Reserve Currency", "Industrial Policy"],
+    sentiment: "neutral",
+    teaser: "US Trade Representative Jamieson Greer's Davos speech received zero mentions in major western financial media despite announcing a return to Hamiltonian economics and Keynes' Bretton Woods proposals for balanced trade with a neutral reserve asset. FFTT analyzes the speech with commentary on implications for global trade architecture.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "IA-2026-0209-001",
+    title: "Transportation | Sales Manager: Used Truck Market Insights",
+    date: "2026-02-09",
+    authors: ["Jarrett Harris"],
+    affiliate: "IronAdvisor",
+    category: "Live Notes",
+    sectors: ["Transportation", "Industrials"],
+    tickers: [],
+    themes: ["Used Trucks", "Freight Rates", "CDL Enforcement", "Fleet Management", "Trucking Cycle"],
+    sentiment: "cautious",
+    teaser: "Field interview with a medium-size Daimler used truck sales manager. Key findings: companies bracing for impact and focusing on cash preservation; new truck prices expected to spike in H2 2026; CDL enforcement providing fragile spot rate support; sales ended 2025 up 11% YoY but momentum faded in Q4. Forecasting 8-10% sales growth in 2026 with focus on late-model low-mile Cascadias under 300K miles.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "LS-2026-0128-001",
+    title: "Zuck's Reckoning: Can Meta Beat Google in AI and Bankrupt OpenAI?",
+    date: "2026-01-28",
+    authors: ["Richard Greenfield", "Brandon Ross", "Mark Kelley"],
+    affiliate: "LightShed",
+    category: "TMT Analysis",
+    sectors: ["Technology", "Internet", "Media"],
+    tickers: ["META", "GOOGL", "SNAP"],
+    themes: ["Artificial Intelligence", "Consumer AI", "Digital Advertising", "Social Media", "Connected TV"],
+    sentiment: "neutral",
+    teaser: "Eight key questions for Meta heading into Q4 2025 earnings: Can Meta AI compete with Gemini given Google's device integration? Will OpenAI go bankrupt as Zuck suggested? Should GenAI chatbots have ads? How will TikTok's US return impact Meta? Is it time to rename the company again as the metaverse vision fades?",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "OPT-2026-0130-001",
+    title: "Consumer Staples Briefing Book — January 2026",
+    date: "2026-01-30",
+    authors: ["Jonathan Feeney", "David Schick", "David Katzman", "Jack Hermann"],
+    affiliate: "Optimal",
+    category: "Sector Briefing Book",
+    sectors: ["Consumer Staples", "Retail", "Restaurants", "Food & Beverage"],
+    tickers: ["HSY", "LW", "MDLZ", "KR", "ACI", "CL", "EL", "PG", "UL"],
+    themes: ["Proprietary spending analysis", "Consumer staples outlook", "Input cost trends", "Restaurant spending", "GLP-1 impact", "Government shutdown risk"],
+    sentiment: "cautious",
+    teaser: "January real-time spending is improving: 16/17 proprietary Optimal staples subsectors now inflecting positively (up from 14/17 last month). Positive inflection in restaurant and beauty spending vs. negative inflection for hard discounters and mainstream grocery ticket. Proprietary Cost Factor shows cost relief continues despite winter energy spike. Leading cost relief beneficiaries include HSY, LW, MDLZ, and wing restaurants.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "OPT-2026-0205-001",
+    title: "Why Sports is Everything & Who Benefits Most — Launching Optimal's Coverage of The Sports Ecosystem",
+    date: "2026-02-05",
+    authors: ["David Katzman", "David Schick", "Jonathan Feeney", "Jack Hermann"],
+    affiliate: "Optimal",
+    category: "Sector Launch / White Paper",
+    sectors: ["Sports", "Media", "Consumer Discretionary", "Gaming"],
+    tickers: ["EA", "TKO", "LYV", "FWONK", "DKNG", "FLUT", "CHDN", "SRAD", "NKE", "LULU", "DKS", "ONON", "PLNT", "PTON"],
+    themes: ["Sports ecosystem $2.3T global market", "Sports fandom & financialization", "Sports betting & data", "Sports participation", "Optimal Sports Ecosystem Index"],
+    sentiment: "bullish",
+    teaser: "Launching the Optimal Sports Ecosystem Index (OSEI) covering 44 companies across three categories: Sports Fandom, Sports Betting & Data, and Sports Participation. The $2.3 trillion global sports economy is growing at 2.2x global GDP, driven by a self-reinforcing flywheel of fandom, gambling, and participation. Equal-weight OSEI has returned 22.5% CAGR since 2016 vs. S&P 500's 9.5%.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  },
+  {
+    id: "OPT-2026-0130-002",
+    title: "Costs Lower — Trouble for Grocers, Relief to CPG, Opportunity for Restaurants: Friday Cost Factor",
+    date: "2026-01-30",
+    authors: ["Jonathan Feeney", "David Schick", "David Katzman", "Jack Hermann"],
+    affiliate: "Optimal",
+    category: "Weekly Cost Analysis",
+    sectors: ["Consumer Staples", "Restaurants", "CPG", "Food & Beverage"],
+    tickers: ["HSY", "MDLZ", "LW", "CHD", "CLX", "PG", "YUM", "DRI", "CMG", "CAVA", "KR", "ACI", "CAG", "KHC"],
+    themes: ["Optimal Cost Factor proprietary index", "Input cost trends", "Commodity tailwinds", "Energy volatility", "Restaurant margins", "Meats/protein deflation"],
+    sentiment: "neutral",
+    teaser: "The Optimal Cost Factor fell -3.2% w/w and -10.8% y/y as volatile energy input prices reverted. Lower input costs create a mixed picture: relief for CPG companies (HSY and MDLZ biggest beneficiaries from cocoa decline -62% y/y) and restaurant margins (meats/proteins down -36.5% y/y), but challenge grocers in perishables where lower costs pressure comp sales and drive private label price cuts.",
+    has_price_targets: false,
+    has_estimate_revisions: false,
+    price_targets: []
+  }
+];
+
+const ANALYSTS = {
+  "22V Research": [
+    { name: "Dennis DeBusschere", focus: "Portfolio Strategy, Macro" },
+    { name: "Brian Herlihy", focus: "Tech, Earnings Strategy" },
+    { name: "Kevin Brocks", focus: "Earnings, Risk Analysis" },
+    { name: "Sophia Wang", focus: "Quant, Technical Analysis" }
+  ],
+  "Fox Advisors": [
+    { name: "Steven Fox", focus: "Data Centers, AI Infrastructure" },
+    { name: "Aneesha Patel", focus: "Supply Chain, Semiconductors" }
+  ],
+  "GLJ Research": [{ name: "Gordon L. Johnson II", focus: "Tesla, EVs, Automotive" }],
+  "Schneider Research": [{ name: "Timm Schneider", focus: "Energy, Utilities, Oil & Gas" }],
+  "Cannonball": [{ name: "Vasily Karasyov", focus: "Digital Advertising, Ad Tech" }],
+  "Fermium": [
+    { name: "Frank Mitsch", focus: "Chemicals, Materials" },
+    { name: "Aziza Gazieva", focus: "Portfolio Strategy, Estimate Revisions" }
+  ],
+  "FFTT": [{ name: "Luke Gromen", focus: "Macro Strategy, Trade Policy" }],
+  "HJones": [{ name: "Heather Jones", focus: "Agriculture, Consumer Foods, Agribusiness" }],
+  "IronAdvisor": [{ name: "Jarrett Harris", focus: "Transportation, Industrials, Trucking" }],
+  "LightShed": [
+    { name: "Richard Greenfield", focus: "Media, Internet, AI" },
+    { name: "Brandon Ross", focus: "Media, Streaming" },
+    { name: "Mark Kelley", focus: "Technology, Digital Media" }
+  ],
+  "Optimal + Rubinson": [
+    { name: "Aram Rubinson", focus: "Consumer Strategy, Retail" },
+    { name: "Shaked Dill", focus: "Consumer Analytics" }
+  ],
+  "Optimal": [
+    { name: "Jonathan Feeney, CFA", focus: "Consumer Staples, Restaurants, Cost Analysis" },
+    { name: "David Schick", focus: "Consumer Staples, Sports Economy" },
+    { name: "David Katzman", focus: "Sports Ecosystem, Consumer Analysis" },
+    { name: "Jack Hermann", focus: "Consumer Research, Data Analytics" }
+  ]
+};
+
+// ═══════════════════════════════════════════
+// SEARCH ENGINE
+// ═══════════════════════════════════════════
+function searchDB(query) {
+  const q = query.toLowerCase();
+  return DB.filter(r => {
+    const searchable = [r.title, r.teaser, ...r.sectors, ...r.tickers, ...r.themes, ...r.authors, r.affiliate, r.category].join(' ').toLowerCase();
+    const words = q.split(/\s+/).filter(w => w.length > 2);
+    return words.some(w => searchable.includes(w));
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function tickerSearch(ticker) {
+  return DB.filter(r => r.tickers.includes(ticker.toUpperCase()));
+}
+
+// ═══════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════
+function renderCard(r) {
+  let html = `<div class="result-card">`;
+  html += `<div class="result-title">${r.title}</div>`;
+  html += `<div class="result-meta">`;
+  html += `<span>${r.authors.join(', ')}</span>`;
+  html += `<span>|</span> <span>${r.affiliate}</span>`;
+  html += `<span>|</span> <span>${r.date}</span>`;
+  html += `<span>|</span> <span>${r.category}</span>`;
+  html += `</div>`;
+
+  html += `<div class="result-tags">`;
+  r.sectors.forEach(s => html += `<span class="tag sector">${s}</span>`);
+  r.tickers.forEach(t => html += `<span class="tag ticker">${t}</span>`);
+  const sc = r.sentiment === 'positive' || r.sentiment === 'bullish' ? 'positive' : r.sentiment === 'negative' || r.sentiment === 'bearish' ? 'negative' : 'neutral';
+  html += `<span class="tag sentiment-${r.sentiment}">${r.sentiment.charAt(0).toUpperCase() + r.sentiment.slice(1)}</span>`;
+  if (r.has_estimate_revisions) html += `<span class="tag sector">Estimate Revisions</span>`;
+  html += `</div>`;
+
+  html += `<div class="result-teaser">${r.teaser}</div>`;
+
+  if (r.price_targets.length > 0) {
+    html += `<div class="price-targets">`;
+    r.price_targets.forEach(pt => {
+      const cls = pt.upside >= 0 ? 'positive' : 'negative';
+      const sign = pt.upside >= 0 ? '+' : '';
+      html += `<div class="pt-item"><span class="ticker-label">${pt.ticker}</span> <span class="pt-value">PT $${pt.target}</span> <span class="upside ${cls}">${sign}${pt.upside}%</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+function renderPaywall(r) {
+  let html = renderCard(r);
+  html += `<div class="paywall-msg">`;
+  html += `<h3>Full Report Requires Analyst Hub Subscription</h3>`;
+  html += `<p>You're seeing the free tier: metadata, teaser summary, and price targets.<br>`;
+  html += `The full report includes complete analysis, charts, ratings, proprietary frameworks, and detailed estimate revisions.</p>`;
+  html += `<a class="cta" href="#">Subscribe to Analyst Hub</a>`;
+  html += `</div>`;
+  return html;
+}
+
+function renderCoverage() {
+  let html = `<span class="tool-label">list_coverage()</span>`;
+  html += `<div class="coverage-grid">`;
+  Object.entries(ANALYSTS).forEach(([aff, analysts]) => {
+    html += `<div class="coverage-card"><h4>${aff}</h4>`;
+    analysts.forEach(a => {
+      html += `<div class="analyst">${a.name}</div><div class="focus">${a.focus}</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+// ═══════════════════════════════════════════
+// PRESET QUERIES
+// ═══════════════════════════════════════════
+function preset(type) {
+  const area = document.getElementById('resultsArea');
+  area.classList.remove('empty');
+  let html = '';
+
+  switch(type) {
+    case 'vrt':
+      document.getElementById('queryInput').value = "What's the latest on VRT data center infrastructure and AI backlog?";
+      html = `<span class="tool-label">search_research(query="VRT data center AI infrastructure")</span>`;
+      html += renderCard(DB.find(r => r.id === 'FOX-2026-0211-001'));
+      break;
+
+    case 'tesla':
+      document.getElementById('queryInput').value = "Show me bearish analysis on Tesla Q4 2025";
+      html = `<span class="tool-label">search_research(query="Tesla Q4 bearish valuation")</span>`;
+      html += renderCard(DB.find(r => r.id === 'GLJ-2026-0129-001'));
+      break;
+
+    case 'supply-chain':
+      document.getElementById('queryInput').value = "What's happening with tech supply chain tightness?";
+      html = `<span class="tool-label">search_research(query="supply chain inventory receivables tightness")</span>`;
+      html += renderCard(DB.find(r => r.id === 'FOX-2026-0210-001'));
+      break;
+
+    case 'meta':
+      document.getElementById('queryInput').value = "Can Meta compete with Google in AI?";
+      html = `<span class="tool-label">search_research(query="Meta AI competition Google")</span>`;
+      html += renderCard(DB.find(r => r.id === 'LS-2026-0128-001'));
+      break;
+
+    case 'dupont':
+      document.getElementById('queryInput').value = "Tell me about DuPont's healthcare and water technology business";
+      html = `<span class="tool-label">search_research(query="DuPont healthcare water technology")</span>`;
+      html += renderCard(DB.find(r => r.id === 'FRM-2026-0210-001'));
+      break;
+
+    case 'trucks':
+      document.getElementById('queryInput').value = "What's the outlook for used truck markets?";
+      html = `<span class="tool-label">search_research(query="used truck market sales trends")</span>`;
+      html += renderCard(DB.find(r => r.id === 'IA-2026-0209-001'));
+      break;
+
+    case 'trade':
+      document.getElementById('queryInput').value = "What's the macro view on US trade policy?";
+      html = `<span class="tool-label">search_research(query="trade policy tariffs Hamiltonian economics")</span>`;
+      html += renderCard(DB.find(r => r.id === 'FFTT-2026-0210-002'));
+      break;
+
+    case 'energy':
+      document.getElementById('queryInput').value = "Give me this week's energy and utility news";
+      html = `<span class="tool-label">search_research(query="energy utilities renewable LNG wind")</span>`;
+      html += renderCard(DB.find(r => r.id === 'SNR-2026-0208-001'));
+      break;
+
+    case 'staples':
+      document.getElementById('queryInput').value = "What are the latest consumer staples spending trends?";
+      html = `<span class="tool-label">search_research(query="consumer staples spending trends")</span>`;
+      html += renderCard(DB.find(r => r.id === 'OPT-2026-0130-001'));
+      break;
+
+    case 'sports':
+      document.getElementById('queryInput').value = "What's the outlook for the sports economy?";
+      html = `<span class="tool-label">search_research(query="sports economy ecosystem")</span>`;
+      html += renderCard(DB.find(r => r.id === 'OPT-2026-0205-001'));
+      break;
+
+    case 'costs':
+      document.getElementById('queryInput').value = "What are the latest CPG and restaurant input cost trends?";
+      html = `<span class="tool-label">search_research(query="cost factor input costs CPG restaurants")</span>`;
+      html += renderCard(DB.find(r => r.id === 'OPT-2026-0130-002'));
+      break;
+
+    case 'coverage':
+      document.getElementById('queryInput').value = "Show me all analysts and their coverage areas";
+      html = renderCoverage();
+      break;
+  }
+
+  area.innerHTML = html;
+}
+
+function runQuery() {
+  const query = document.getElementById('queryInput').value.trim();
+  if (!query) return;
+
+  const area = document.getElementById('resultsArea');
+  area.classList.remove('empty');
+
+  // Check for ticker patterns
+  const tickerMatch = query.match(/\b([A-Z]{2,5})\b/g);
+  let results = searchDB(query);
+
+  if (tickerMatch) {
+    tickerMatch.forEach(t => {
+      const tr = tickerSearch(t);
+      tr.forEach(r => { if (!results.find(x => x.id === r.id)) results.push(r); });
+    });
+  }
+
+  let html = `<span class="tool-label">search_research(query="${query.substring(0, 50)}")</span>`;
+
+  if (results.length === 0) {
+    html += `<div style="text-align:center;padding:40px;color:#64748B"><p>No matching research found for this query.</p><p style="margin-top:8px;font-size:13px">Try one of the preset queries above, or search for: VRT, Tesla, supply chain, Meta, DuPont, trucks, trade policy, energy, utilities, semiconductor, AI, data center</p></div>`;
+  } else {
+    results.forEach(r => html += renderCard(r));
+  }
+
+  area.innerHTML = html;
+}
+
+document.getElementById('queryInput').addEventListener('keypress', e => { if (e.key === 'Enter') runQuery(); });
+</script>
+</body>
+</html>
+
